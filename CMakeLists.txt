@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.14)
 
 project(DAISYSP VERSION 0.0.1)
 
+# Set macOS deployment target and architecture
+set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
+set(CMAKE_OSX_ARCHITECTURES "arm64")
+
 add_library(DaisySP STATIC
 Source/Control/adenv.cpp
 Source/Control/adsr.cpp
@@ -19,6 +23,7 @@ Source/Effects/decimator.cpp
 Source/Effects/flanger.cpp
 Source/Effects/overdrive.cpp
 Source/Effects/phaser.cpp
+Source/Effects/reverbsc.cpp
 Source/Effects/sampleratereducer.cpp
 Source/Effects/tremolo.cpp
 Source/Effects/wavefolder.cpp
@@ -47,10 +52,10 @@ Source/Utility/metro.cpp
 )
 
 
-set_target_properties(DaisySP PROPERTIES PUBLIC
+set_target_properties(DaisySP PROPERTIES
   CXX_STANDARD 14
-  CXX_STANDARD_REQUIRED
-  )
+  CXX_STANDARD_REQUIRED ON
+)
 
 
 target_include_directories(DaisySP PUBLIC

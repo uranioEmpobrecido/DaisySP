@@ -30,6 +30,7 @@
 /** Dynamics Modules */
 #include "Dynamics/crossfade.h"
 #include "Dynamics/limiter.h"
+#include "Dynamics/compressor.h"
 
 /** Effects Modules */
 #include "Effects/autowah.h"
@@ -41,6 +42,7 @@
 #include "Effects/phaser.h"
 #include "Effects/sampleratereducer.h"
 #include "Effects/tremolo.h"
+#include "Effects/reverbsc.h"
 #include "Effects/wavefolder.h"
 
 /** Filter Modules */

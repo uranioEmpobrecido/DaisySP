@@ -24,6 +24,7 @@ DYNAMICS_MOD_DIR = Dynamics
 DYNAMICS_MODULES = \
 crossfade \
 limiter \
+compressor \
 
 EFFECTS_MOD_DIR = Effects
 EFFECTS_MODULES = \
@@ -33,6 +34,7 @@ decimator \
 flanger \
 overdrive \
 phaser \
+reverbsc \
 sampleratereducer \
 tremolo \
 wavefolder \

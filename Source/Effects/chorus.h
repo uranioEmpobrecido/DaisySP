@@ -63,6 +63,10 @@ class ChorusEngine
     */
     void SetFeedback(float feedback);
 
+    /** Set the effect amount.
+    */
+    void SetEffectAmount(float amt);
+
   private:
     float                    sample_rate_;
     static constexpr int32_t kDelayLength
@@ -72,9 +76,8 @@ class ChorusEngine
     float lfo_phase_;
     float lfo_freq_;
     float lfo_amp_;
-
     float feedback_;
-
+    float effect_amt_;
     float delay_;
 
     DelayLine<float, kDelayLength> del_;
@@ -178,12 +181,15 @@ class Chorus
     */
     void SetFeedback(float feedback);
 
+    /** Set the effect amount.
+    */
+    void SetEffectAmount(float amt);
   private:
     ChorusEngine engines_[2];
     float        gain_frac_;
     float        pan_[2];
-
     float sigl_, sigr_;
+
 };
 } //namespace daisysp
 #endif

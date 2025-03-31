@@ -21,13 +21,25 @@ void ChorusEngine::Init(float sample_rate)
 
 float ChorusEngine::Process(float in)
 {
+    // Get the LFO modulation and set the modulated delay time.
     float lfo_sig = ProcessLfo();
     del_.SetDelay(lfo_sig + delay_);
 
+    // Read from delay line
     float out = del_.Read();
+    // Write into delay line (with feedback)
     del_.Write(in + out * feedback_);
 
-    return (in + out) * .5f; //equal mix
+    // ... (rest of your chorus/vibrato crossfade processing)
+    float chorusSig  = in + out;
+    float vibratoSig = chorusSig * (lfo_sig / 70.0f);
+    float amt  = effect_amt_;
+    float sign = amt >= 0.0f ? 1.0f : -1.0f;
+    float mix  = fabsf(amt);
+    float effectSignal = (sign > 0.0f) ? vibratoSig : chorusSig;
+    float finalOut = (1.0f - mix) * in + mix * effectSignal;
+
+    return finalOut;
 }
 
 void ChorusEngine::SetLfoDepth(float depth)
@@ -60,6 +72,11 @@ void ChorusEngine::SetDelayMs(float ms)
 void ChorusEngine::SetFeedback(float feedback)
 {
     feedback_ = fclamp(feedback, 0.f, 1.f);
+}
+
+void ChorusEngine::SetEffectAmount(float amt)
+{ 
+    effect_amt_ = amt; 
 }
 
 float ChorusEngine::ProcessLfo()
@@ -184,4 +201,10 @@ void Chorus::SetFeedback(float feedbackl, float feedbackr)
 void Chorus::SetFeedback(float feedback)
 {
     SetFeedback(feedback, feedback);
+}
+
+void Chorus::SetEffectAmount(float amt)
+{
+    engines_[0].SetEffectAmount(amt);
+    engines_[1].SetEffectAmount(amt);
 }
