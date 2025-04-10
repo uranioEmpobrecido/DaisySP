@@ -22,8 +22,8 @@ https://opensource.org/licenses/MIT.
 0.050 * SR = 2400 samples (at 48kHz)
 */
 //#define SHIFT_BUFFER_SIZE 16384
-//#define SHIFT_BUFFER_SIZE 4800
-#define SHIFT_BUFFER_SIZE 12000
+#define SHIFT_BUFFER_SIZE 2400
+//#define SHIFT_BUFFER_SIZE 12000
 //#define SHIFT_BUFFER_SIZE 1024
 
 namespace daisysp
@@ -90,28 +90,27 @@ class PitchShifter
     */
     float Process(float &in)
     {
-        float val, fade1, fade2;
-        // First Process delay mod/crossfade
-        fade1 = phs_[0].Process();
-        fade2 = phs_[1].Process();
+        float fade1 = phs_[0].Process();
+        float fade2 = phs_[1].Process();
+
+        // Detect phasor wrap-around to update random modulation parameters
         if(prev_phs_a_ > fade1)
         {
-            mod_a_amt_ = fun_ * ((float)(myrand() % 255) / 255.0f)
-                         * (del_size_ * 0.5f);
-            mod_coeff_[0]
-                = 0.0002f + (((float)(myrand() % 255) / 255.0f) * 0.001f);
+            // Update random modulation amounts using a precomputed normalization factor
+            float randNormA = ((float)(myrand() % 255)) / 255.0f;
+            mod_a_amt_ = fun_ * randNormA * (del_size_ * 0.5f);
+            mod_coeff_[0] = 0.0002f + (((float)(myrand() % 255)) / 255.0f) * 0.001f;
         }
         if(prev_phs_b_ > fade2)
         {
-            mod_b_amt_ = fun_ * ((float)(myrand() % 255) / 255.0f)
-                         * (del_size_ * 0.5f);
-            mod_coeff_[1]
-                = 0.0002f + (((float)(myrand() % 255) / 255.0f) * 0.001f);
+            float randNormB = ((float)(myrand() % 255)) / 255.0f;
+            mod_b_amt_ = fun_ * randNormB * (del_size_ * 0.5f);
+            mod_coeff_[1] = 0.0002f + (((float)(myrand() % 255)) / 255.0f) * 0.001f;
         }
-        slewed_mod_[0] += mod_coeff_[0] * (mod_a_amt_ - slewed_mod_[0]);
-        slewed_mod_[1] += mod_coeff_[1] * (mod_b_amt_ - slewed_mod_[1]);
         prev_phs_a_ = fade1;
         prev_phs_b_ = fade2;
+
+        // If shifting up, invert the fade for crossfade calculation
         if(shift_up_)
         {
             fade1 = 1.0f - fade1;
@@ -119,26 +118,32 @@ class PitchShifter
         }
         mod_[0] = fade1 * (del_size_ - 1);
         mod_[1] = fade2 * (del_size_ - 1);
-#ifdef USE_ARM_DSP
+
+    #ifdef USE_ARM_DSP
         gain_[0] = arm_sin_f32(fade1 * (float)M_PI);
         gain_[1] = arm_sin_f32(fade2 * (float)M_PI);
-#else
+    #else
         gain_[0] = sinf(fade1 * PI_F);
         gain_[1] = sinf(fade2 * PI_F);
-#endif
+    #endif
 
-        // Handle Delay Writing
+        // Write the input to both delay lines
         d_[0].Write(in);
         d_[1].Write(in);
-        // Modulate Delay Lines
-        //mod_a_amt = mod_b_amt = 0.0f;
-        d_[0].SetDelay(mod_[0] + mod_a_amt_);
-        d_[1].SetDelay(mod_[1] + mod_b_amt_);
-        d_[0].SetDelay(mod_[0] + slewed_mod_[0]);
-        d_[1].SetDelay(mod_[1] + slewed_mod_[1]);
-        val = 0.0f;
-        val += (d_[0].Read() * gain_[0]);
-        val += (d_[1].Read() * gain_[1]);
+
+        // Combine modulations (for example, averaging the immediate and slewed modulation)
+        slewed_mod_[0] += mod_coeff_[0] * (mod_a_amt_ - slewed_mod_[0]);
+        slewed_mod_[1] += mod_coeff_[1] * (mod_b_amt_ - slewed_mod_[1]);
+
+        // Compute final delay offsets for each delay line
+        float finalMod0 = mod_[0] + 0.5f * (mod_a_amt_ + slewed_mod_[0]);
+        float finalMod1 = mod_[1] + 0.5f * (mod_b_amt_ + slewed_mod_[1]);
+
+        d_[0].SetDelay(finalMod0);
+        d_[1].SetDelay(finalMod1);
+
+        // Read and mix the outputs with calculated gains
+        float val = (d_[0].Read() * gain_[0]) + (d_[1].Read() * gain_[1]);
         return val;
     }
 
